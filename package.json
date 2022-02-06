@@ -1,0 +1,47 @@
+{
+  "name": "gladiator.tf-bot-owner-script",
+  "version": "1.8.0",
+  "description": "A script for owners of bots on gladiator.tf",
+  "main": "gladiator.user.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Moder112/gladiator.tf-bot-owner-script.git"
+  },
+  "author": "manic",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mninc/gladiator.tf-bot-owner-script/issues"
+  },
+  "scripts": {
+    "build": "userscript-builder --mode dev",
+    "release:bugfix": "userscript-builder --mode bugfix",
+    "release:minor": "userscript-builder --mode minor",
+    "release:major": "userscript-builder --mode major"
+  },
+  "homepage": "https://github.com/mninc/gladiator.tf-bot-owner-script#readme",
+  "userscript": {
+    "entry": "./src/index.js",
+    "dev": "./dist",
+    "release": "./release",
+    "fileName": "filename",
+    "meta": {
+      "name": "Gladiator.tf bot owner script",
+      "namespace": "https://steamcommunity.com/profiles/76561198320810968",
+      "homepage": "https://github.com/mninc/gladiator.tf-bot-owner-script",
+      "support": "https://github.com/mninc/gladiator.tf-bot-owner-script/issues",
+      "download": "https://github.com/mninc/gladiator.tf-bot-owner-script/raw/master/gladiator.user.js",
+      "include": "/^https?:\\/\\/(.*\\.)?((backpack)|(gladiator))\\.tf(:\\d+)?\\//",
+      "grant": [
+        "GM.getValue",
+        "GM.setValue"
+      ],
+      "run-at" : "document-end"
+    }
+  },
+  "devDependencies": {
+    "userscript-builder": "^0.4.0"
+  }
+}

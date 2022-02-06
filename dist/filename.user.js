@@ -1,65 +1,23 @@
 // ==UserScript==
 // @name         Gladiator.tf bot owner script
 // @namespace    https://steamcommunity.com/profiles/76561198320810968
-// @version      1.8
+// @version      1.8.0
 // @description  A script for owners of bots on gladiator.tf
 // @author       manic
-// @grant    GM.getValue
-// @grant    GM.setValue
+// @match        http://*/*
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @source       https://github.com/Moder112/gladiator.tf-bot-owner-script.git
 // @license      MIT
-
-// @homepageURL     https://github.com/mninc/gladiator.tf-bot-owner-script
-// @supportURL      https://github.com/mninc/gladiator.tf-bot-owner-script/issues
-// @downloadURL     https://github.com/mninc/gladiator.tf-bot-owner-script/raw/master/gladiator.user.js
-
-// @run-at       document-end
+// @homepage     https://github.com/mninc/gladiator.tf-bot-owner-script
+// @support      https://github.com/mninc/gladiator.tf-bot-owner-script/issues
+// @download     https://github.com/mninc/gladiator.tf-bot-owner-script/raw/master/gladiator.user.js
 // @include      /^https?:\/\/(.*\.)?((backpack)|(gladiator))\.tf(:\d+)?\//
+// @run-at       document-end
 // ==/UserScript==
-const keyEx = /(\d*(?= keys?))/;
-const refEx = /\d*(.\d*)?(?= ref)/;
 
-
-function parseListingPrice(price){
-    return {
-        keys:  parseFloat(keyEx.exec(price) ? keyEx.exec(price).shift() : 0),
-        metal: parseFloat(refEx.exec(price) ? refEx.exec(price).shift() : 0)
-    };
-}
-
-function hasBlacklistedProperties(info){
-    if( 
-        info.data('paint_name')     !== undefined || 
-        info.data('spell_1')        !== undefined || 
-        info.data('part_price_1')   !== undefined || 
-        info.data('killstreaker')   !== undefined ||
-        info.data('sheen')          !== undefined 
-    ){
-        return true;
-    }
-       
-    else 
-        return false;
-}
-
-function spawnButton(element){
-    element = $(element);
-    const info = element.find('.item');
-    const price = parseListingPrice(info.data('listing_price') || "");
-    const match = `<a  href="https://gladiator.tf/manage/my/item/${encodeURIComponent((info.prop('title') || info.data('original-title')).trim())}?keys=${price.keys}&metal=${price.metal}&intent=${info.data('listing_intent')}" title="Match this user's price" target="_blank" class="btn btn-bottom btn-xs btn-success">
-            <i class="fa fa-sw fa-tags"></i>
-        </a>`;
-    
-    if(!hasBlacklistedProperties(info) || info.data('listing_intent') === "sell" )
-        element.find(".listing-buttons").prepend(match);
-}
-
-
-
-
-let buttons = {};
-
-(function() {
-    'use strict';
+// src/backpack/index.js
+function(){
     $(document).ready(function(){
         $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
 
@@ -68,24 +26,14 @@ let buttons = {};
 
         
     }); 
-    
-    switch(window.origin){
-        case 'https://gladiator.tf':
-            gladiator(); 
-            break;
-        case 'https://backpack.tf':
-            buttons = {
-                addAll: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all</a>`),
-                addAllPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all priced unusuals</a>`),
-                addAllUnPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all unpriced unusuals</a>`),
-                check: $(`<div class="" target="_blank"><input type="checkbox" id="store-check">Store to Add Later</div>`)
-            }
-            backpack();
-            break;
-    }
-})();
 
-function backpack(){
+    buttons = {
+        addAll: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all</a>`),
+        addAllPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all priced unusuals</a>`),
+        addAllUnPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all unpriced unusuals</a>`),
+        check: $(`<div class="" target="_blank"><input type="checkbox" id="store-check">Store to Add Later</div>`)
+    }
+
     for (let i of document.getElementsByClassName('price-box')) {
         if (i.origin === 'https://gladiator.tf') { 
           return;
@@ -157,12 +105,78 @@ function backpack(){
     if(window.location.href.includes('/stats') || window.location.href.includes('/classifieds')) {
         let sellers = $($(".media-list")[0]);
         let buyers = $($(".media-list")[1]);
-        sellers.find(".listing").each(function(){spawnButton(this)});
-        buyers.find(".listing").each(function(){spawnButton(this)});
-          
+        sellers.find(".listing").each(spawnButton);
+        buyers.find(".listing").each(spawnButton);
     }
 }
 
+// src/entrypoints.js
+async function gladiator(){
+    let itemsBulk = /gladiator\.tf(:\d+)?\/manage\/\w*\/items\/bulk/;
+    if(itemsBulk.test(window.location.href)){
+       let storage =  await GM.getValue("items", "[]");
+       if(storage.length > 2){
+           $("#tm-input").val(storage).trigger("input");
+       }
+    }
+}
+
+
+
+default{
+    "https://gladiator.tf": gladiator,
+    "https://127.0.0.1": gladiator,
+    "https://backpack.tf": backpack
+}
+
+// src/index.js
+const keyEx = /(\d*(?= keys?))/;
+const refEx = /\d*(.\d*)?(?= ref)/;
+
+
+function parseListingPrice(price){
+    return {
+        keys:  parseFloat(keyEx.exec(price) ? keyEx.exec(price).shift() : 0),
+        metal: parseFloat(refEx.exec(price) ? refEx.exec(price).shift() : 0)
+    };
+}
+
+function hasBlacklistedProperties(info){
+    if( 
+        info.data('paint_name')     !== undefined || 
+        info.data('spell_1')        !== undefined || 
+        info.data('part_price_1')   !== undefined || 
+        info.data('killstreaker')   !== undefined ||
+        info.data('sheen')          !== undefined 
+    ){
+        return true;
+    }
+       
+    else 
+        return false;
+}
+
+function spawnButton(element){
+    element = $(element);
+    const info = element.find('.item');
+    const price = parseListingPrice(info.data('listing_price') || "");
+    const match = `<a  href="https://gladiator.tf/manage/my/item/${encodeURIComponent((info.prop('title') || info.data('original-title')).trim())}?keys=${price.keys}&metal=${price.metal}&intent=${info.data('listing_intent')}" title="Match this user's price" target="_blank" class="btn btn-bottom btn-xs btn-success">
+            <i class="fa fa-sw fa-tags"></i>
+        </a>`;
+    
+    if(!hasBlacklistedProperties(info) || info.data('listing_intent') === "sell" )
+        element.find(".listing-buttons").prepend(match);
+}
+
+
+
+
+let buttons = {};
+
+(function() {
+    'use strict';
+    entrypoints[window.origin]();
+})();
 
 /**
  * Add items in bulk
@@ -219,15 +233,5 @@ function parseItemListItem($item){
         craftable,
         name,
         pathToImg
-    }
-}
-
-async function gladiator(){
-    let itemsBulk = /gladiator\.tf(:\d+)?\/manage\/\w*\/items\/bulk/;
-    if(itemsBulk.test(window.location.href)){
-       let storage =  await GM.getValue("items", "[]");
-       if(storage.length > 2){
-           $("#tm-input").val(storage).trigger("input");
-       }
     }
 }
