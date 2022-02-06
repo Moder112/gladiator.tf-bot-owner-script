@@ -1,10 +1,11 @@
 // ==UserScript==
-// @name         Gladiator.tf bot owner script debug
+// @name         Gladiator.tf bot owner script
 // @namespace    https://steamcommunity.com/profiles/76561198320810968
-// @version      1.9
+// @version      1.8
 // @description  A script for owners of bots on gladiator.tf
 // @author       manic
-// @grant        none
+// @grant    GM.getValue
+// @grant    GM.setValue
 // @license      MIT
 
 // @homepageURL     https://github.com/mninc/gladiator.tf-bot-owner-script
@@ -14,7 +15,6 @@
 // @run-at       document-end
 // @include      /^https?:\/\/(.*\.)?((backpack)|(gladiator))\.tf(:\d+)?\//
 // ==/UserScript==
-
 const keyEx = /(\d*(?= keys?))/;
 const refEx = /\d*(.\d*)?(?= ref)/;
 
@@ -53,22 +53,78 @@ function spawnButton(element){
         element.find(".listing-buttons").prepend(match);
 }
 
+
+
+
+let buttons = {};
+
 (function() {
     'use strict';
-    
     $(document).ready(function(){
         $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
 
         //javascript nonsense
         window.jQuery('.fa-tags').parent().tooltip();
+
+        
     }); 
-
-    for (let i of document.getElementsByClassName('price-box')) {
-      if (i.origin === 'https://gladiator.tf') { 
-        return;
-      }
+    
+    switch(window.origin){
+        case 'https://gladiator.tf':
+            gladiator(); 
+            break;
+        case 'https://backpack.tf':
+            buttons = {
+                addAll: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all</a>`),
+                addAllPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all priced unusuals</a>`),
+                addAllUnPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all unpriced unusuals</a>`),
+                check: $(`<div class="" target="_blank"><input type="checkbox" id="store-check">Store to Add Later</div>`)
+            }
+            backpack();
+            break;
     }
+})();
 
+function backpack(){
+    for (let i of document.getElementsByClassName('price-box')) {
+        if (i.origin === 'https://gladiator.tf') { 
+          return;
+        }
+      }
+    
+
+    if (window.location.href.includes('https://backpack.tf/effect/')){
+        let check;
+        appendCheck(".panel-body > .padded");
+        $(".panel-body > .padded").append(buttons.addAll);
+
+        buttons.addAll.on("click", ()=>{
+            check = buttons.check.find("input").val();
+            addItems("#unusual-pricelist > li", check)
+        });
+    }
+    if (window.location.href.includes('https://backpack.tf/unusual/')){
+
+        let check;
+
+        appendCheck(".panel-body > .padded");
+        $(".panel-body > .padded").append(buttons.addAll);
+        $(".panel-body > .padded").append(buttons.addAllPriced);
+        $(".panel-body > .padded").append(buttons.addAUnPriced);
+
+        buttons.addAll.on("click", ()=>{
+            check = buttons.check.find("input").val();
+            addItems(".item-list.unusual-pricelist > li, .item-list.unusual-pricelist-missing > li", check)
+        });
+        buttons.addAllPriced.on("click", ()=>{
+            check = buttons.check.find("input").val();
+            addItems(".item-list.unusual-pricelist > li", check);
+        });
+        buttons.addAllUnPriced.on("click", ()=>{
+            check = buttons.check.find("input").val();
+            addItems(".item-list.unusual-pricelist-missing > li", check)
+        });
+    }
     if (window.location.href.includes('/stats')) {
         $('.price-boxes').append(
             `<a class="price-box" href="https://gladiator.tf/manage/my/item/${encodeURIComponent($('.stats-header-title').text().trim())}/add" target="_blank" data-tip="top" data-original-title="Gladiator.tf">
@@ -97,6 +153,7 @@ function spawnButton(element){
         }, 750);
     });
 
+    
     if(window.location.href.includes('/stats') || window.location.href.includes('/classifieds')) {
         let sellers = $($(".media-list")[0]);
         let buyers = $($(".media-list")[1]);
@@ -104,4 +161,73 @@ function spawnButton(element){
         buyers.find(".listing").each(function(){spawnButton(this)});
           
     }
-})();
+}
+
+
+/**
+ * Add items in bulk
+ * @param {string | Array} input CSS selector of items to add or array of pre-made items to add 
+ * @param {boolean} redirect True if extension is to redirect after adding the items 
+ */
+function addItems(input, redirect = true){
+    let items = [];
+    if($(input).length > 0){
+        console.log("input");
+        $(input).each(function(){
+            items.push(parseItemListItem($(this)));
+        });
+        mergeAndAdd(items);
+    }else if(Array.isArray(input)){
+        
+    }else{
+        console.log("none");
+    }
+}
+
+async function appendCheck(selector){
+    $(selector).append(buttons.check);
+    if(new Boolean(await GM.getValue("check", false))){
+        buttons.check.click();
+    }
+    buttons.check.on("click", function(){
+        GM.setValue("check", $(this).val());
+    })
+}
+
+async function mergeAndAdd(newItems){
+    GM.getValue("items", "[]").then((val)=>{
+        GM.setValue("items", [...val, ...newItems]);
+        console.log([...val, ...newItems]);
+    });
+}
+
+function parseItemListItem($item){
+    let quality = $item.data("q_name");
+    let effect_id = $item.data("effect_id");
+    let craftable = $item.data("craftable");
+    let name = $item.prop("title") || $item.data("original-title");
+    let pathToImg = "";
+    
+    if($item.find(".item-icon").length){
+        let background_image = /(?<=url\().*?(?=\))/.exec($item.find(".item-icon").css("background-image"));
+        pathToImg = background_image.shift();
+    }
+
+    return {
+        quality,
+        effect_id,
+        craftable,
+        name,
+        pathToImg
+    }
+}
+
+async function gladiator(){
+    let itemsBulk = /gladiator\.tf(:\d+)?\/manage\/\w*\/items\/bulk/;
+    if(itemsBulk.test(window.location.href)){
+       let storage =  await GM.getValue("items", "[]");
+       if(storage.length > 2){
+           $("#tm-input").val(storage).trigger("input");
+       }
+    }
+}
