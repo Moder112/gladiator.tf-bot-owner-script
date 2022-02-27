@@ -59,8 +59,7 @@ function renderForm(){
     <h4>Choose The Bot</h4>
     <hr>
     </div>`);
-    $bots.append($select);
-    $bots.insertAfter("hr", botAmount > 0 ? $select : "<span>You dont have multiple bots, or if you do, <a>refresh</a></span>");
+    (botAmount > 0 ? $select : $(`<span>You dont have multiple bots, or if you do, <a href="${'https://127.0.0.1' + '/manage?kickback=true'}">view your manage page</a> to refresh</span>`)).insertAfter($bots.find("hr"));
     $parent.append($bots);
 
     return $parent;

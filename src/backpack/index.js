@@ -12,7 +12,7 @@ function settings(){
                 <div class="value" style="font-size: 14px;">Settings</div>
             </div>
         </a>
-    `).on('click', ()=>Modal.render('Settings', Settings.form.render).$base
+    `).on('click', ()=>Modal.render('Settings', Settings.form.render()).$base
                             .on('hide.bs.modal',()=>{
                                 Settings.form.submit();
                                 fixManageLink(Settings.data.manageContext);
@@ -63,6 +63,12 @@ function fixManageLink(manageContext){
 export default function backpack(pathname){
     $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
 
+    for (let i of document.getElementsByClassName('price-box')) {
+        if (i.origin === 'https://gladiator.tf') { 
+          return;
+        }
+    }
+
     const classiesAndStats = [addOnGladiatorPopup, addOnGladiatorStats, addMatchButtons];
 
     const patterns = {
@@ -75,7 +81,6 @@ export default function backpack(pathname){
     execOnRegexMatch(patterns, pathname);
     fixManageLink();
     
-
     buttons = {
         addAll: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all</a>`),
         addAllPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all priced unusuals</a>`),
@@ -83,10 +88,6 @@ export default function backpack(pathname){
         check: $(`<div class="" target="_blank"><input type="checkbox" id="store-check">Store to Add Later</div>`)
     }
 
-    for (let i of document.getElementsByClassName('price-box')) {
-        if (i.origin === 'https://gladiator.tf') { 
-          return;
-        }
-    }
+    $('.price-boxes').append($(`<button>test</button>`).on('click', ()=>{Settings.data.bots = {}}));
 
 }
