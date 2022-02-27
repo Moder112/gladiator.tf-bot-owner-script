@@ -24,6 +24,7 @@ function loadSettings(){
 
 function saveSettings(){
     GM.setValue('settings', JSON.stringify(Settings.data));
+    console.log(Settings.data);
 }
 
 /**
@@ -66,8 +67,11 @@ function renderForm(){
 }
 
 function submitForm(){
-    const form = $('#glad-settings').serializeArray();
-    Settings.data.manageContext = form['manageContext'] ? form['manageContext'] : 'my';
+    const formArray = $('#glad-settings').serializeArray();
+    let formData = {};
+    formArray.forEach((entry)=>formData[entry.name] = entry.value);
+
+    Settings.data.manageContext = formData['manageContext'] ? formData['manageContext'] : 'my';
     Settings.save();
 }
 

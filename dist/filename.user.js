@@ -26,6 +26,41 @@ const svg = {
 
 svg;
 
+// src/util/regexExec.js
+/**
+ * @typedef {Object<string, Function|Function[]>} MatchExec
+ */
+
+/**
+ * 
+ * @param {MatchExec} matchAndExec 
+ * @param {string} test 
+ * @param {any[]|any[][]} [payload]
+ */
+function execOnRegexMatch(matchAndExec, test, payload = []){
+    Object.entries(matchAndExec).forEach((entry)=>{
+        const [regex, toExecute] = entry;
+
+        const regexObj = new RegExp(regex);
+
+        if(regexObj.test(test)){
+            if(typeof toExecute === 'function')
+                toExecute(...payload);
+            if(Array.isArray(toExecute)){
+                for(let i = 0; i < toExecute.length; i++){
+                    if(typeof toExecute[i] === 'function'){
+                        let localPayload = [];
+                        if(Array.isArray(payload[i]))
+                            localPayload = payload[i];
+
+                        toExecute[i](...localPayload);
+                    }
+                }
+            }
+        }
+    })
+}
+
 // src/util/settings.js
 /**
  * @typedef {{
@@ -51,6 +86,7 @@ function loadSettings(){
 
 function saveSettings(){
     GM.setValue('settings', JSON.stringify(Settings.data));
+    console.log(Settings.data);
 }
 
 /**
@@ -71,10 +107,10 @@ function fetchBotData(){
 }
 
 function renderForm(){
-    const $parent = $("<div></div>");
+    const $parent = $("<form id='glad-settings'></form>");
 
     const botAmount = Object.keys(Settings.data.bots).length;
-    const $select = $("<select></select>");
+    const $select = $("<select name='manageContext'></select>");
     console.log(Settings.data.bots);
     console.log(Object.entries(Settings.data.bots));
     Object.entries(Settings.data.bots).forEach((bot)=>{
@@ -93,7 +129,12 @@ function renderForm(){
 }
 
 function submitForm(){
+    const formArray = $('#glad-settings').serializeArray();
+    let formData = {};
+    formArray.forEach((entry)=>formData[entry.name] = entry.value);
 
+    Settings.data.manageContext = formData['manageContext'] ? formData['manageContext'] : 'my';
+    Settings.save();
 }
 
 const Settings = {
@@ -104,7 +145,10 @@ const Settings = {
     },
     load: loadSettings,
     save: saveSettings,
-    renderForm,
+    form: {
+        render: renderForm,
+        submit: submitForm
+    },
     updateBotData: ()=>{
         let fetched = fetchBotData();
         console.log(fetched);
@@ -119,144 +163,20 @@ const Settings = {
 
 Settings;
 
-// src/backpack/index.js
-function backpack(){
-    $(document).ready(function(){
-        $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
+// src/backpack/addMatch.js
+function addMatchButtons(){
+    let sellers = $($(".media-list")[0]);
+    let buyers = $($(".media-list")[1]);
 
-        //javascript nonsense
-        window.jQuery('.fa-tags').parent().tooltip();
+    sellers.find(".listing").each(spawnButton);
+    buyers.find(".listing").each(spawnButton);
 
-    }); 
-
-    buttons = {
-        addAll: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all</a>`),
-        addAllPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all priced unusuals</a>`),
-        addAllUnPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all unpriced unusuals</a>`),
-        check: $(`<div class="" target="_blank"><input type="checkbox" id="store-check">Store to Add Later</div>`)
-    }
-
-    for (let i of document.getElementsByClassName('price-box')) {
-        if (i.origin === 'https://gladiator.tf') { 
-          return;
-        }
-      }
-    
-
-    if (window.location.href.includes('https://backpack.tf/effect/')){
-        let check;
-        appendCheck(".panel-body > .padded");
-        $(".panel-body > .padded").append(buttons.addAll);
-
-        buttons.addAll.on("click", ()=>{
-            check = buttons.check.find("input").val();
-            addItems("#unusual-pricelist > li", check)
-        });
-    }
-    if (window.location.href.includes('https://backpack.tf/unusual/')){
-
-        let check;
-
-        appendCheck(".panel-body > .padded");
-        $(".panel-body > .padded").append(buttons.addAll);
-        $(".panel-body > .padded").append(buttons.addAllPriced);
-        $(".panel-body > .padded").append(buttons.addAUnPriced);
-
-        buttons.addAll.on("click", ()=>{
-            check = buttons.check.find("input").val();
-            addItems(".item-list.unusual-pricelist > li, .item-list.unusual-pricelist-missing > li", check)
-        });
-        buttons.addAllPriced.on("click", ()=>{
-            check = buttons.check.find("input").val();
-            addItems(".item-list.unusual-pricelist > li", check);
-        });
-        buttons.addAllUnPriced.on("click", ()=>{
-            check = buttons.check.find("input").val();
-            addItems(".item-list.unusual-pricelist-missing > li", check)
-        });
-    }
-    if (window.location.href.includes('/stats')) {
-        $('.price-boxes').append(
-            `<a class="price-box" href="https://gladiator.tf/manage/my/item/${encodeURIComponent($('.stats-header-title').text().trim())}/add" target="_blank" data-tip="top" data-original-title="Gladiator.tf">
-                <img src="https://gladiator.tf/favicon-96x96.png" alt="gladiator">
-                <div class="text" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0;">
-                    <div class="value" style="font-size: 14px;">Add on Gladiator.tf</div>
-                </div>
-            </a>`);
-        const $svg = 
-        $(`
-            <a class="price-box" data-tip="top" data-original-title="Gladiator.tf">
-                ${svg.options}
-                <div class="text" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0;">
-                    <div class="value" style="font-size: 14px;">Settings</div>
-                </div>
-            </a>
-        `).on('click', ()=>{Modal.render('Settings', Settings.renderForm())});
-
-        $('.price-boxes').append($svg);
-
-        
-    }
-
-    $("body").on("mouseover", ".item", function () {
-        let self = this;
-        let id = setInterval(function() {
-            if ($(self).next().hasClass("popover")) {
-                let popover = $(self).next().find("#popover-price-links");
-
-                if (popover.find("a[href^='https://gladiator.tf']").length == 0) {
-                    popover.append("<a class=\"btn btn-default btn-xs\" href=\"" + `https://gladiator.tf/manage/my/item/${encodeURIComponent($($(self)[0]).data('original-title'))}/add` + "\" target=\"_blank\"><img src=\"https://gladiator.tf/favicon-96x96.png\" style='width: 16px;height: 16px;margin-top: -2px;'> Add on Gladiator.tf</a>");
-                }
-
-                clearInterval(id);
-            }
-        }, 50);
-        setTimeout(function () {
-            clearInterval(id);
-        }, 750);
-    });
-
-    
-    if(window.location.href.includes('/stats') || window.location.href.includes('/classifieds')) {
-        let sellers = $($(".media-list")[0]);
-        let buyers = $($(".media-list")[1]);
-        sellers.find(".listing").each(spawnButton);
-        buyers.find(".listing").each(spawnButton);
-    }
+    // what the fuck
+    globalThis.unsafeWindow.jQuery('.fa-tags').parent().tooltip();
 }
 
-// src/gladiator/index.js
-function gladiator(pathname){
-    console.log(pathname);
-    if(pathname === '/manage') Settings.updateBotData();
-};
-
-// src/entrypoints.js
-/**
- * async function gladiator(){
-    let itemsBulk = /gladiator\.tf(:\d+)?\/manage\/\w*\/items\/bulk/;
-    if(itemsBulk.test(window.location.href)){
-       let storage =  await GM.getValue("items", "[]");
-       if(storage.length > 2){
-           $("#tm-input").val(storage).trigger("input");
-       }
-    }
-}
- */
-
-
-const entrypoints = {
-    "https://gladiator.tf": gladiator,
-    "https://127.0.0.1": gladiator,
-    "https://backpack.tf": backpack
-}
-
-entrypoints;
-
-// src/index.js
 const keyEx = /(\d*(?= keys?))/;
 const refEx = /\d*(.\d*)?(?= ref)/;
-
 
 function parseListingPrice(price){
     return {
@@ -280,11 +200,11 @@ function hasBlacklistedProperties(info){
         return false;
 }
 
-function spawnButton(element){
-    element = $(element);
+function spawnButton(){
+    let element = $(this);   
     const info = element.find('.item');
     const price = parseListingPrice(info.data('listing_price') || "");
-    const match = `<a  href="https://gladiator.tf/manage/my/item/${encodeURIComponent((info.prop('title') || info.data('original-title')).trim())}?keys=${price.keys}&metal=${price.metal}&intent=${info.data('listing_intent')}" title="Match this user's price" target="_blank" class="btn btn-bottom btn-xs btn-success">
+    const match = `<a data-postfix="/item/${encodeURIComponent((info.prop('title') || info.data('original-title')).trim())}?keys=${price.keys}&metal=${price.metal}&intent=${info.data('listing_intent')}" title="Match this user's price" target="_blank" class="btn btn-bottom btn-xs btn-success gladiator-context">
             <i class="fa fa-sw fa-tags"></i>
         </a>`;
     
@@ -292,16 +212,162 @@ function spawnButton(element){
         element.find(".listing-buttons").prepend(match);
 }
 
+// src/backpack/index.js
+function settings(){
+    const $svg =  $(`
+        <a class="price-box" data-tip="top" data-original-title="Gladiator.tf">
+            ${svg.options}
+            <div class="text" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0;">
+                <div class="value" style="font-size: 14px;">Settings</div>
+            </div>
+        </a>
+    `).on('click', ()=>Modal.render('Settings', Settings.form.render).$base
+                            .on('hide.bs.modal',()=>{
+                                Settings.form.submit();
+                                fixManageLink(Settings.data.manageContext);
+                            }));
+
+    $('.price-boxes').append($svg);   
+}
+function addOnGladiatorStats(){
+    const $addButton = $(`
+        <a class="price-box gladiator-context" data-postfix="/item/${encodeURIComponent($('.stats-header-title').text().trim())}/add" target="_blank" data-tip="top" data-original-title="Gladiator.tf">
+            <img src="https://gladiator.tf/favicon-96x96.png" alt="gladiator">
+            <div class="text" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0;">
+                <div class="value" style="font-size: 14px;">Add on Gladiator.tf</div>
+            </div>
+        </a>
+    `);
+
+    $('.price-boxes').append($addButton);
+}
+function addOnGladiatorPopup(){
+    $("body").on("mouseover", ".item", function () {
+        let self = this;
+        let id = setInterval(function() {
+            if ($(self).next().hasClass("popover")) {
+                let popover = $(self).next().find("#popover-price-links");
+
+                if (popover.find("a[href^='https://gladiator.tf']").length == 0) {
+                    popover.append("<a class=\"btn btn-default btn-xs\" href=\"" + `https://gladiator.tf/manage/${Settings.data.manageContext}/item/${encodeURIComponent($($(self)[0]).data('original-title'))}/add` + "\" target=\"_blank\"><img src=\"https://gladiator.tf/favicon-96x96.png\" style='width: 16px;height: 16px;margin-top: -2px;'> Add on Gladiator.tf</a>");
+                }
+
+                clearInterval(id);
+            }
+        }, 50);
+        setTimeout(function () {
+            clearInterval(id);
+        }, 750);
+    });
+}
+
+function fixManageLink(manageContext){
+    if(!manageContext) manageContext = Settings.data.manageContext;
+    
+    $('.gladiator-context').each(function(){
+        $(this).attr('href', `https://gladiator.tf/manage/${manageContext}${$(this).data('postfix')}`); 
+    });
+}
 
 
 
+function backpack(pathname){
+    $(document).ready(function(){
+        $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
+
+        const classiesAndStats = [addOnGladiatorPopup, addOnGladiatorStats, addMatchButtons];
+
+        const patterns = {
+            "stats\/":      [...classiesAndStats, settings],
+            "classifieds\/":[...classiesAndStats],
+        };
+
+        execOnRegexMatch(patterns, pathname);
+        fixManageLink();
+    }); 
+
+    buttons = {
+        addAll: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all</a>`),
+        addAllPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all priced unusuals</a>`),
+        addAllUnPriced: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all unpriced unusuals</a>`),
+        check: $(`<div class="" target="_blank"><input type="checkbox" id="store-check">Store to Add Later</div>`)
+    }
+
+    for (let i of document.getElementsByClassName('price-box')) {
+        if (i.origin === 'https://gladiator.tf') { 
+          return;
+        }
+    }
+
+    
+
+    if (pathname.includes('/effect/')){
+        let check;
+        appendCheck(".panel-body > .padded");
+        $(".panel-body > .padded").append(buttons.addAll);
+
+        buttons.addAll.on("click", ()=>{
+            check = buttons.check.find("input").val();
+            addItems("#unusual-pricelist > li", check)
+        });
+    }
+    if (pathname.includes('/unusual/')){
+
+        let check;
+
+        appendCheck(".panel-body > .padded");
+        $(".panel-body > .padded").append(buttons.addAll);
+        $(".panel-body > .padded").append(buttons.addAllPriced);
+        $(".panel-body > .padded").append(buttons.addAUnPriced);
+
+        buttons.addAll.on("click", ()=>{
+            check = buttons.check.find("input").val();
+            addItems(".item-list.unusual-pricelist > li, .item-list.unusual-pricelist-missing > li", check)
+        });
+        buttons.addAllPriced.on("click", ()=>{
+            check = buttons.check.find("input").val();
+            addItems(".item-list.unusual-pricelist > li", check);
+        });
+        buttons.addAllUnPriced.on("click", ()=>{
+            check = buttons.check.find("input").val();
+            addItems(".item-list.unusual-pricelist-missing > li", check)
+        });
+    }
+    
+}
+
+// src/gladiator/index.js
+function gladiator(pathname){
+    if(pathname === '/manage') Settings.updateBotData();
+};
+
+// src/entrypoints.js
+/**
+ * async function gladiator(){
+    let itemsBulk = /gladiator\.tf(:\d+)?\/manage\/\w*\/items\/bulk/;
+    if(itemsBulk.test(window.location.href)){
+       let storage =  await GM.getValue("items", "[]");
+       if(storage.length > 2){
+           $("#tm-input").val(storage).trigger("input");
+       }
+    }
+}
+ */
+
+
+const entrypoints = {
+    "(gladiator\.tf)|(127.0.0.1)": gladiator,
+    "backpack\.tf": backpack
+}
+
+entrypoints;
+
+// src/index.js
 let buttons = {};
 (function() {
     'use strict';
     Settings.load().then(()=>{
-        if(typeof entrypoints[window.origin] === 'function'){
-            entrypoints[window.origin](window.location.pathname);
-        }
+        execOnRegexMatch(entrypoints, window.location.origin, [window.location.pathname]);
     });
 })();
 

@@ -15,9 +15,8 @@ import gladiator from "./gladiator/index";
 
 
 const entrypoints = {
-    "https://gladiator.tf": gladiator,
-    "https://127.0.0.1": gladiator,
-    "https://backpack.tf": backpack
+    "(gladiator\.tf)|(127.0.0.1)": gladiator,
+    "backpack\.tf": backpack
 }
 
 export default entrypoints;
