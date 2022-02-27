@@ -3,9 +3,6 @@
   "version": "1.8.0",
   "description": "A script for owners of bots on gladiator.tf",
   "main": "gladiator.user.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Moder112/gladiator.tf-bot-owner-script.git"
@@ -38,10 +35,11 @@
         "GM.getValue",
         "GM.setValue"
       ],
-      "run-at" : "document-end"
+      "run-at": "document-end"
     }
   },
   "devDependencies": {
+    "@types/jquery": "^3.5.14",
     "userscript-builder": "^0.4.0"
   }
 }

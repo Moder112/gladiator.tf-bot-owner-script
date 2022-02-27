@@ -16,15 +16,117 @@
 // @run-at       document-end
 // ==/UserScript==
 
+// src/assets.js
+const svg = {
+    options: `<svg style="width:36px;height:36px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.23 36.96">
+        <path fill="#fbb040" d="M19.67 0 13.3 1.78l2.4 5.33c-.22.1-.4.2-.65.34l-.43.21a16.86 16.86 0 0 0-3.41 2.5l-4-4.33-4.07 4.97 5.02 3.02c-.17.27-.35.55-.49.8a18.22 18.22 0 0 0-1.63 4.54l-.03.2-5.7-1.25-.3 6.6 5.78-.47A16.4 16.4 0 0 0 7 29.18l-5.36 2.3 3.31 5.48 5.74-4.7 3.52-2.8c0-.02-.03-.04-.04-.06l-.2-.27-.39-.54a9.62 9.62 0 0 1-1-1.78v-.02a10.3 10.3 0 0 1-.8-3.05 7.94 7.94 0 0 1 0-1.8l.03-.29c.04-.32.08-.65.14-.96.18-1.07.5-2.1 1.06-3.16.12-.2.25-.37.37-.56.27-.43.56-.83.87-1.2l.05-.06a15.61 15.61 0 0 1 2.24-2.15c.57-.36 1.1-.64 1.64-.9a9.8 9.8 0 0 1 2.1-.74l.74-.14.08-.01c.3-.04.63-.08.97-.1a13.16 13.16 0 0 1 4.02.61l.17.05c.4.12.8.28 1.19.44l.26.1 1.04-1.97 4.48-8.45L27.2.25 26 6a16.75 16.75 0 0 0-5.64-.24L19.67 0z"/>
+        <path fill="#fff" d="M19.22 12.87c-.9.36-1.76.82-2.55 1.37a10.4 10.4 0 0 0-3.17 3.57 9.92 9.92 0 0 0-1.17 4.85 9.87 9.87 0 0 0 1.19 4.8 10.28 10.28 0 0 0 3.2 3.57 9.5 9.5 0 0 0 2.47 1.28c.9.31 1.86.47 2.82.47h1a8 8 0 0 0 2.82-.51c.9-.34 1.75-.79 2.55-1.33.5-.36.97-.76 1.4-1.19v-7.7h-5.85l-2.65 3.49H25v2c-.71.36-1.5.55-2.29.55h-.29a6.21 6.21 0 0 1-2.08-.43 4.94 4.94 0 0 1-2.86-2.93 6.35 6.35 0 0 1 0-4.2c.22-.7.6-1.35 1.13-1.87a6.62 6.62 0 0 1 1.87-1.29c.69-.33 1.44-.5 2.2-.51.51 0 1.02.06 1.52.17l-1.38 1.63h4.28l2.73-3.28a9.56 9.56 0 0 0-6.55-3.1 8.35 8.35 0 0 0-4.06.59Z" data-name="Layer 1"/>
+    </svg>`
+}
+
+svg;
+
+// src/util/settings.js
+/**
+ * @typedef {{
+ *  bots: Bots,
+ *  manageContext: string
+ * }} SettingsData
+ * */
+
+/** @typedef {Object<string, string>} Bots */
+
+/**
+ * @returns {Promise<SettingsData>}
+ */
+function loadSettings(){
+    return new Promise((resolve)=>{
+        GM.getValue('settings', JSON.stringify(Settings.data)).then((settings)=>{
+            const parsed = JSON.parse(settings);
+            Settings.data = parsed;
+            resolve(parsed);
+        })
+    });
+}
+
+function saveSettings(){
+    GM.setValue('settings', JSON.stringify(Settings.data));
+}
+
+/**
+ * @returns {Bots|null}
+ */
+function fetchBotData(){
+    /**
+     * @type {JQuery<HTMLFormElement>}
+     */
+    const form = $("#userBots");
+    if(form.length === 0 || !form.serializeArray)
+        return null;
+     
+    let formData = {};
+    form.serializeArray().forEach((entry)=>formData[entry.name] = entry.value);
+
+    return formData;
+}
+
+function renderForm(){
+    const $parent = $("<div></div>");
+
+    const botAmount = Object.keys(Settings.data.bots).length;
+    const $select = $("<select></select>");
+    console.log(Settings.data.bots);
+    console.log(Object.entries(Settings.data.bots));
+    Object.entries(Settings.data.bots).forEach((bot)=>{
+        $select.append(`<option value="${bot[1]}" ${Settings.data.manageContext === bot[1] ? 'selected' : ''}>${bot[0]}</option>`)
+    })
+
+    const $bots = $(`<div>
+    <h4>Choose The Bot</h4>
+    <hr>
+    </div>`);
+    $bots.append($select);
+    $bots.insertAfter("hr", botAmount > 0 ? $select : "<span>You dont have multiple bots, or if you do, <a>refresh</a></span>");
+    $parent.append($bots);
+
+    return $parent;
+}
+
+function submitForm(){
+
+}
+
+const Settings = {
+    /** @type {SettingsData} */
+    data: {
+        manageContext: 'my',
+        bots: {}
+    },
+    load: loadSettings,
+    save: saveSettings,
+    renderForm,
+    updateBotData: ()=>{
+        let fetched = fetchBotData();
+        console.log(fetched);
+        if(fetched !== null){
+            Settings.data.bots = fetched;
+            
+            console.log({msg: "Fetched data from /manage", bots: Settings.data.bots});
+            Settings.save();
+        }
+    }
+}
+
+Settings;
+
 // src/backpack/index.js
-function(){
+function backpack(){
     $(document).ready(function(){
         $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
 
         //javascript nonsense
         window.jQuery('.fa-tags').parent().tooltip();
 
-        
     }); 
 
     buttons = {
@@ -81,6 +183,19 @@ function(){
                     <div class="value" style="font-size: 14px;">Add on Gladiator.tf</div>
                 </div>
             </a>`);
+        const $svg = 
+        $(`
+            <a class="price-box" data-tip="top" data-original-title="Gladiator.tf">
+                ${svg.options}
+                <div class="text" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0;">
+                    <div class="value" style="font-size: 14px;">Settings</div>
+                </div>
+            </a>
+        `).on('click', ()=>{Modal.render('Settings', Settings.renderForm())});
+
+        $('.price-boxes').append($svg);
+
+        
     }
 
     $("body").on("mouseover", ".item", function () {
@@ -110,8 +225,15 @@ function(){
     }
 }
 
+// src/gladiator/index.js
+function gladiator(pathname){
+    console.log(pathname);
+    if(pathname === '/manage') Settings.updateBotData();
+};
+
 // src/entrypoints.js
-async function gladiator(){
+/**
+ * async function gladiator(){
     let itemsBulk = /gladiator\.tf(:\d+)?\/manage\/\w*\/items\/bulk/;
     if(itemsBulk.test(window.location.href)){
        let storage =  await GM.getValue("items", "[]");
@@ -120,14 +242,16 @@ async function gladiator(){
        }
     }
 }
+ */
 
 
-
-default{
+const entrypoints = {
     "https://gladiator.tf": gladiator,
     "https://127.0.0.1": gladiator,
     "https://backpack.tf": backpack
 }
+
+entrypoints;
 
 // src/index.js
 const keyEx = /(\d*(?= keys?))/;
@@ -172,10 +296,13 @@ function spawnButton(element){
 
 
 let buttons = {};
-
 (function() {
     'use strict';
-    entrypoints[window.origin]();
+    Settings.load().then(()=>{
+        if(typeof entrypoints[window.origin] === 'function'){
+            entrypoints[window.origin](window.location.pathname);
+        }
+    });
 })();
 
 /**

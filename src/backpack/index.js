@@ -1,12 +1,13 @@
+import svg from "../assets";
+import Settings from "../util/settings";
 
-export default function(){
+export default function backpack(){
     $(document).ready(function(){
         $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
 
         //javascript nonsense
         window.jQuery('.fa-tags').parent().tooltip();
 
-        
     }); 
 
     buttons = {
@@ -63,6 +64,22 @@ export default function(){
                     <div class="value" style="font-size: 14px;">Add on Gladiator.tf</div>
                 </div>
             </a>`);
+        const $svg = 
+        $(`
+            <a class="price-box" data-tip="top" data-original-title="Gladiator.tf">
+                ${svg.options}
+                <div class="text" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0;">
+                    <div class="value" style="font-size: 14px;">Settings</div>
+                </div>
+            </a>
+        `).on('click', ()=>{
+            Modal   .render('Settings', Settings.form.render)
+                    .on('hide.bs.modal', Settings.form.submit)
+        });
+
+        $('.price-boxes').append($svg);
+
+        
     }
 
     $("body").on("mouseover", ".item", function () {

@@ -1,5 +1,6 @@
 
 import entrypoints from "./entrypoints";
+import Settings from "./util/settings";
 
 const keyEx = /(\d*(?= keys?))/;
 const refEx = /\d*(.\d*)?(?= ref)/;
@@ -43,10 +44,13 @@ function spawnButton(element){
 
 
 let buttons = {};
-
 (function() {
     'use strict';
-    entrypoints[window.origin]();
+    Settings.load().then(()=>{
+        if(typeof entrypoints[window.origin] === 'function'){
+            entrypoints[window.origin](window.location.pathname);
+        }
+    });
 })();
 
 /**
