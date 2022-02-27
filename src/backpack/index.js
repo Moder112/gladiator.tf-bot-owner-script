@@ -2,6 +2,7 @@ import svg from "../assets";
 import execOnRegexMatch from "../util/regexExec";
 import Settings from "../util/settings";
 import addMatchButtons from "./addMatch";
+import { effect, unusual } from "./bulkAdd";
 
 function settings(){
     const $svg =  $(`
@@ -59,22 +60,21 @@ function fixManageLink(manageContext){
     });
 }
 
-
-
 export default function backpack(pathname){
-    $(document).ready(function(){
-        $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
+    $('[title="Gladiator.tf Instant Trade"]').css('margin-right','3px');
 
-        const classiesAndStats = [addOnGladiatorPopup, addOnGladiatorStats, addMatchButtons];
+    const classiesAndStats = [addOnGladiatorPopup, addOnGladiatorStats, addMatchButtons];
 
-        const patterns = {
-            "stats\/":      [...classiesAndStats, settings],
-            "classifieds\/":[...classiesAndStats],
-        };
+    const patterns = {
+        "stats\/":      [...classiesAndStats, settings],
+        "classifieds\/":[...classiesAndStats],
+        "effect\/":     [addOnGladiatorPopup, effect, settings],
+        "unusual\/":    [addOnGladiatorPopup, unusual, settings]
+    };
 
-        execOnRegexMatch(patterns, pathname);
-        fixManageLink();
-    }); 
+    execOnRegexMatch(patterns, pathname);
+    fixManageLink();
+    
 
     buttons = {
         addAll: $(`<a class="btn btn-default" target="_blank"><i class="fas fa-plus-circle"></i>Add all</a>`),
@@ -89,39 +89,4 @@ export default function backpack(pathname){
         }
     }
 
-    
-
-    if (pathname.includes('/effect/')){
-        let check;
-        appendCheck(".panel-body > .padded");
-        $(".panel-body > .padded").append(buttons.addAll);
-
-        buttons.addAll.on("click", ()=>{
-            check = buttons.check.find("input").val();
-            addItems("#unusual-pricelist > li", check)
-        });
-    }
-    if (pathname.includes('/unusual/')){
-
-        let check;
-
-        appendCheck(".panel-body > .padded");
-        $(".panel-body > .padded").append(buttons.addAll);
-        $(".panel-body > .padded").append(buttons.addAllPriced);
-        $(".panel-body > .padded").append(buttons.addAUnPriced);
-
-        buttons.addAll.on("click", ()=>{
-            check = buttons.check.find("input").val();
-            addItems(".item-list.unusual-pricelist > li, .item-list.unusual-pricelist-missing > li", check)
-        });
-        buttons.addAllPriced.on("click", ()=>{
-            check = buttons.check.find("input").val();
-            addItems(".item-list.unusual-pricelist > li", check);
-        });
-        buttons.addAllUnPriced.on("click", ()=>{
-            check = buttons.check.find("input").val();
-            addItems(".item-list.unusual-pricelist-missing > li", check)
-        });
-    }
-    
 }

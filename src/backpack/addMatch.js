@@ -1,3 +1,5 @@
+const keyEx = /(\d*(?= keys?))/;
+const refEx = /\d*(.\d*)?(?= ref)/;
 
 export default function addMatchButtons(){
     let sellers = $($(".media-list")[0]);
@@ -10,9 +12,6 @@ export default function addMatchButtons(){
     globalThis.unsafeWindow.jQuery('.fa-tags').parent().tooltip();
 }
 
-const keyEx = /(\d*(?= keys?))/;
-const refEx = /\d*(.\d*)?(?= ref)/;
-
 function parseListingPrice(price){
     return {
         keys:  parseFloat(keyEx.exec(price) ? keyEx.exec(price).shift() : 0),
@@ -21,18 +20,15 @@ function parseListingPrice(price){
 }
 
 function hasBlacklistedProperties(info){
-    if( 
-        info.data('paint_name')     !== undefined || 
+    if( info.data('paint_name')     !== undefined || 
         info.data('spell_1')        !== undefined || 
         info.data('part_price_1')   !== undefined || 
         info.data('killstreaker')   !== undefined ||
-        info.data('sheen')          !== undefined 
-    ){
+        info.data('sheen')          !== undefined ){
         return true;
     }
        
-    else 
-        return false;
+    return false;
 }
 
 function spawnButton(){
